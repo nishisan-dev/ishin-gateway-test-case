@@ -8,7 +8,7 @@ NODE_IP="${2:?missing node ip}"
 UPSTREAM_IP="${3:?missing upstream ip}"
 UPSTREAM_PORT="${4:-80}"
 CLUSTER_SEEDS_CSV="${5:?missing cluster seeds}"
-NGATE_VERSION="2.1.1"
+NGATE_VERSION="2.2.0"
 PACKAGE_URL="https://github.com/nishisan-dev/n-gate/releases/download/v${NGATE_VERSION}/n-gate_${NGATE_VERSION}_all.deb"
 PACKAGE_PATH="/tmp/n-gate_${NGATE_VERSION}_all.deb"
 CLUSTER_DATA_DIR="/var/log/n-gate/ngrid-data"
@@ -87,6 +87,10 @@ cluster:
   seeds:${SEEDS_YAML}
   replicationFactor: 2
   dataDirectory: "${CLUSTER_DATA_DIR}"
+
+admin:
+  enabled: true
+  apiKey: "nishisan"
 EOF
 
 mkdir -p /etc/n-gate/rules/default
