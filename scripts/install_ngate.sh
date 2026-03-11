@@ -64,7 +64,9 @@ endpoints:
     backends:
       backend-1:
         backendName: "${NODE_NAME}-backend"
-        endPointUrl: "http://${UPSTREAM_IP}:${UPSTREAM_PORT}"
+        members:
+          - url: "http://${UPSTREAM_IP}:${UPSTREAM_PORT}"
+            weight: 1
 
     ruleMapping: "default/Rules.groovy"
     ruleMappingThreads: 1
