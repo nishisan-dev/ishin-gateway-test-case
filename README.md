@@ -2,8 +2,8 @@
 
 Projeto para subir tres VMs locais com Vagrant:
 
-- `ngate-1`: Ubuntu + `n-gate v2.0.0` em cluster
-- `ngate-2`: Ubuntu + `n-gate v2.0.0` em cluster
+- `ngate-1`: Ubuntu + `n-gate v2.1.0` em cluster
+- `ngate-2`: Ubuntu + `n-gate v2.1.0` em cluster
 - `web-1`: Ubuntu + `nginx`
 
 Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e sao configurados para encaminhar requests para a VM `web-1`.
