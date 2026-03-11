@@ -2,8 +2,8 @@
 
 Projeto para subir tres VMs locais com Vagrant:
 
-- `ngate-1`: Ubuntu + `n-gate v2.1.0` em cluster
-- `ngate-2`: Ubuntu + `n-gate v2.1.0` em cluster
+- `ngate-1`: Ubuntu + `n-gate v2.2.0` em cluster
+- `ngate-2`: Ubuntu + `n-gate v2.2.0` em cluster
 - `web-1`: Ubuntu + `nginx`
 
 Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e sao configurados para encaminhar requests para a VM `web-1`.
@@ -62,6 +62,45 @@ curl http://localhost:29090
 ```
 
 Se tudo estiver certo, os dois endpoints do `n-gate` devem retornar a pagina HTML servida pelo `nginx`.
+
+## Admin API e CLI
+
+A Admin API esta habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` v2.2.0 instala o utilitário `ngate-cli` em `/usr/bin/`.
+
+### Usar o CLI para gerenciar rules
+
+```bash
+# Configurar a chave (uma vez, ou adicionar em /etc/n-gate/cli.conf)
+export NGATE_API_KEY="nishisan"
+
+# Listar scripts do bundle ativo
+ngate-cli list
+
+# Consultar versao ativa
+ngate-cli version
+
+# Deploy de rules a partir de um diretorio
+ngate-cli deploy /etc/n-gate/rules
+```
+
+### Usar via curl (alternativa)
+
+```bash
+# Listar scripts
+curl http://localhost:9190/admin/rules/list -H "X-API-Key: nishisan"
+
+# Consultar versao
+curl http://localhost:9190/admin/rules/version -H "X-API-Key: nishisan"
+
+# Deploy
+curl -X POST http://localhost:9190/admin/rules/deploy \
+  -H "X-API-Key: nishisan" \
+  -F "scripts=@/etc/n-gate/rules/default/Rules.groovy"
+```
+
+### Deploy de rules em cluster
+
+Ao fazer deploy via CLI ou Admin API em qualquer nó, o bundle é replicado automaticamente para todos os nós do cluster via NGrid DistributedMap. Os scripts sao materializados em `/etc/n-gate/rules` em todos os nós.
 
 ## Cluster
 
