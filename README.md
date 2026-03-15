@@ -2,8 +2,8 @@
 
 Projeto para subir tres VMs locais com Vagrant:
 
-- `ngate-1`: Ubuntu + `n-gate v2.2.0` em cluster
-- `ngate-2`: Ubuntu + `n-gate v2.2.0` em cluster
+- `ngate-1`: Ubuntu + `n-gate v2.2.2` em cluster
+- `ngate-2`: Ubuntu + `n-gate v2.2.2` em cluster
 - `web-1`: Ubuntu + `nginx`
 
 Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e sao configurados para encaminhar requests para a VM `web-1`.
@@ -65,7 +65,7 @@ Se tudo estiver certo, os dois endpoints do `n-gate` devem retornar a pagina HTM
 
 ## Admin API e CLI
 
-A Admin API esta habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` v2.2.0 instala o utilitário `ngate-cli` em `/usr/bin/`.
+A Admin API esta habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` v2.2.2 instala o utilitário `ngate-cli` em `/usr/bin/`.
 
 ### Usar o CLI para gerenciar rules
 
