@@ -1,24 +1,28 @@
-# Laboratorio Vagrant para n-gate
+# Laboratório Vagrant para n-gate
 
-Projeto para subir tres VMs locais com Vagrant:
+Projeto para subir quatro VMs locais com Vagrant:
 
-- `ngate-1`: Ubuntu + `n-gate v2.2.2` em cluster
-- `ngate-2`: Ubuntu + `n-gate v2.2.2` em cluster
-- `web-1`: Ubuntu + `nginx`
+- `ngate-1`: Ubuntu + `n-gate v3.1.2` em cluster (com Dashboard de Observabilidade)
+- `ngate-2`: Ubuntu + `n-gate v3.1.2` em cluster (com Dashboard de Observabilidade)
+- `web-1`: Ubuntu + `nginx` (backend de teste)
+- `zipkin-1`: Ubuntu + `Zipkin Server` (coleta de traces distribuídos)
 
-Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e sao configurados para encaminhar requests para a VM `web-1`.
+Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e são configurados para encaminhar requests para a VM `web-1`. Traces são exportados automaticamente para `zipkin-1`.
 
 ## Requisitos
 
 - Vagrant
 - Um provider suportado pelo box escolhido:
-- `libvirt` com `vagrant-libvirt`
-- ou `VirtualBox`
+  - `libvirt` com `vagrant-libvirt`
+  - ou `VirtualBox`
 
 ## Subir o ambiente
 
+Subir em sequência reduz problemas de bootstrap do cluster:
+
 ```bash
 vagrant up web-1
+vagrant up zipkin-1
 vagrant up ngate-1
 vagrant up ngate-2
 ```
@@ -27,21 +31,21 @@ Com `libvirt`:
 
 ```bash
 vagrant up web-1 --provider=libvirt
+vagrant up zipkin-1 --provider=libvirt
 vagrant up ngate-1 --provider=libvirt
 vagrant up ngate-2 --provider=libvirt
 ```
 
-Subir em sequencia reduz problemas de bootstrap do cluster.
+## Máquinas e rede
 
-## Maquinas e rede
-
-| VM | IP privado | Servico principal | Acesso do host |
+| VM | IP privado | Serviços | Acesso do host |
 | --- | --- | --- | --- |
-| `ngate-1` | `192.168.56.11` | `n-gate` em `9090`, management em `9190`, cluster em `7100` | `http://localhost:19090`, `http://localhost:19190` |
-| `ngate-2` | `192.168.56.12` | `n-gate` em `9090`, management em `9190`, cluster em `7100` | `http://localhost:29090`, `http://localhost:29190` |
-| `web-1` | `192.168.56.21` | `nginx` em `80` | `http://localhost:18080` |
+| `ngate-1` | `192.168.56.11` | proxy `9090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:19090`, `http://localhost:19190`, `http://localhost:19200` |
+| `ngate-2` | `192.168.56.12` | proxy `9090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:29090`, `http://localhost:29190`, `http://localhost:29200` |
+| `web-1` | `192.168.56.21` | nginx `80` | `http://localhost:18080` |
+| `zipkin-1` | `192.168.56.31` | Zipkin `9411` | `http://localhost:39411` |
 
-## Testes rapidos
+## Testes rápidos
 
 Testar o nginx diretamente:
 
@@ -61,11 +65,48 @@ Testar o proxy no segundo n-gate:
 curl http://localhost:29090
 ```
 
-Se tudo estiver certo, os dois endpoints do `n-gate` devem retornar a pagina HTML servida pelo `nginx`.
+Se tudo estiver certo, os dois endpoints do `n-gate` devem retornar a página HTML servida pelo `nginx`.
+
+## Observabilidade
+
+### Dashboard
+
+O Dashboard de Observabilidade está habilitado por padrão em ambos os nós n-gate:
+
+```bash
+# Dashboard do ngate-1
+curl http://localhost:19200/api/dashboard/health
+
+# Dashboard do ngate-2
+curl http://localhost:29200/api/dashboard/health
+```
+
+O Dashboard UI pode ser acessado diretamente no browser em `http://localhost:19200` ou `http://localhost:29200`.
+
+### Zipkin (Distributed Tracing)
+
+O Zipkin Server roda na VM `zipkin-1` e coleta traces de ambos os nós n-gate automaticamente:
+
+```bash
+# Health check do Zipkin
+curl http://localhost:39411/health
+
+# UI do Zipkin (abrir no browser)
+# http://localhost:39411
+
+# Consultar traces recentes (após gerar tráfego)
+curl "http://localhost:39411/api/v2/traces?limit=5"
+```
+
+O Dashboard do n-gate também faz proxy para o Zipkin, permitindo consultar traces diretamente pela UI:
+
+```bash
+curl http://localhost:19200/api/dashboard/traces
+```
 
 ## Admin API e CLI
 
-A Admin API esta habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` v2.2.2 instala o utilitário `ngate-cli` em `/usr/bin/`.
+A Admin API está habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` v3.1.2 instala o utilitário `ngate-cli` em `/usr/bin/`.
 
 ### Usar o CLI para gerenciar rules
 
@@ -76,10 +117,10 @@ export NGATE_API_KEY="nishisan"
 # Listar scripts do bundle ativo
 ngate-cli list
 
-# Consultar versao ativa
+# Consultar versão ativa
 ngate-cli version
 
-# Deploy de rules a partir de um diretorio
+# Deploy de rules a partir de um diretório
 ngate-cli deploy /etc/n-gate/rules
 ```
 
@@ -89,7 +130,7 @@ ngate-cli deploy /etc/n-gate/rules
 # Listar scripts
 curl http://localhost:9190/admin/rules/list -H "X-API-Key: nishisan"
 
-# Consultar versao
+# Consultar versão
 curl http://localhost:9190/admin/rules/version -H "X-API-Key: nishisan"
 
 # Deploy
@@ -100,43 +141,46 @@ curl -X POST http://localhost:9190/admin/rules/deploy \
 
 ### Deploy de rules em cluster
 
-Ao fazer deploy via CLI ou Admin API em qualquer nó, o bundle é replicado automaticamente para todos os nós do cluster via NGrid DistributedMap. Os scripts sao materializados em `/etc/n-gate/rules` em todos os nós.
+Ao fazer deploy via CLI ou Admin API em qualquer nó, o bundle é replicado automaticamente para todos os nós do cluster via NGrid DistributedMap. Os scripts são materializados em `/etc/n-gate/rules` em todos os nós.
 
 ## Cluster
 
-O cluster e configurado automaticamente com estes seeds:
+O cluster é configurado automaticamente com estes seeds:
 
 - `ngate-1` conhece `ngate-2:7100`
 - `ngate-2` conhece `ngate-1:7100`
 
-Cada no recebe um `nodeId` fixo via `NGATE_CLUSTER_NODE_ID`.
+Cada nó recebe um `nodeId` fixo via `NGATE_CLUSTER_NODE_ID`.
 
-Para verificar se os nos subiram, consulte os logs:
+Para verificar se os nós subiram, consulte os logs:
 
 ```bash
 vagrant ssh ngate-1 -c "sudo journalctl -u n-gate -n 100 --no-pager"
 vagrant ssh ngate-2 -c "sudo journalctl -u n-gate -n 100 --no-pager"
+vagrant ssh zipkin-1 -c "sudo journalctl -u zipkin -n 50 --no-pager"
 ```
 
-Se o build expor actuator no management port, voce tambem pode testar:
+Se o build expor actuator no management port, você também pode testar:
 
 ```bash
 curl http://localhost:19190/actuator/health
 curl http://localhost:29190/actuator/health
 ```
 
-## Comandos uteis
+## Comandos úteis
 
 Entrar em uma VM:
 
 ```bash
 vagrant ssh ngate-1
+vagrant ssh zipkin-1
 ```
 
 Ver status dos serviços:
 
 ```bash
 vagrant ssh ngate-1 -c "sudo systemctl status n-gate --no-pager"
+vagrant ssh zipkin-1 -c "sudo systemctl status zipkin --no-pager"
 vagrant ssh web-1 -c "sudo systemctl status nginx --no-pager"
 ```
 
@@ -146,7 +190,7 @@ Reprovisionar:
 vagrant provision
 ```
 
-Destruir o laboratorio:
+Destruir o laboratório:
 
 ```bash
 vagrant destroy -f
