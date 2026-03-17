@@ -9,8 +9,8 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 NODE_NAME="${1:?missing node name}"
-ZIPKIN_VERSION="3.5.2"
-ZIPKIN_JAR_URL="https://search.maven.org/remote_content?g=io.zipkin&a=zipkin-server&v=${ZIPKIN_VERSION}&c=exec"
+ZIPKIN_VERSION="3.4.4"
+ZIPKIN_JAR_URL="https://github.com/openzipkin/zipkin/releases/download/${ZIPKIN_VERSION}/zipkin-server-${ZIPKIN_VERSION}-exec.jar"
 ZIPKIN_DIR="/opt/zipkin"
 ZIPKIN_JAR="${ZIPKIN_DIR}/zipkin.jar"
 ZIPKIN_USER="zipkin"
@@ -28,7 +28,7 @@ mkdir -p "${ZIPKIN_DIR}"
 # ─── Download do JAR ────────────────────────────────────────────────────────
 if [[ ! -f "${ZIPKIN_JAR}" ]]; then
   echo "Baixando Zipkin Server v${ZIPKIN_VERSION}..."
-  curl -fSL "${ZIPKIN_JAR_URL}" -o "${ZIPKIN_JAR}"
+  curl -fSL -o "${ZIPKIN_JAR}" "${ZIPKIN_JAR_URL}"
 fi
 
 chown -R "${ZIPKIN_USER}:${ZIPKIN_USER}" "${ZIPKIN_DIR}"
@@ -61,5 +61,7 @@ systemctl daemon-reload
 systemctl enable zipkin
 systemctl restart zipkin
 
-sleep 3
-systemctl --no-pager --full status zipkin
+# Aguarda startup do Java (pode demorar ~10s)
+echo "Aguardando Zipkin iniciar..."
+sleep 10
+systemctl --no-pager --full status zipkin || true
