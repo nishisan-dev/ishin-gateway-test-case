@@ -46,6 +46,7 @@ discovery.type: single-node
 # ─── Rede ────────────────────────────────────────────────────────────────────
 network.host: 127.0.0.1
 http.port: 9200
+http.compression: false
 
 # ─── Segurança (desabilitada para lab) ───────────────────────────────────────
 xpack.security.enabled: false
