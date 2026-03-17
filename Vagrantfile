@@ -13,6 +13,8 @@ Vagrant.configure("2") do |config|
       service_host_port: 19090,
       management_guest_port: 9190,
       management_host_port: 19190,
+      dashboard_guest_port: 9200,
+      dashboard_host_port: 19200,
       provisioner: "scripts/install_ngate.sh",
       args: [
         "ngate-1",
@@ -30,6 +32,8 @@ Vagrant.configure("2") do |config|
       service_host_port: 29090,
       management_guest_port: 9190,
       management_host_port: 29190,
+      dashboard_guest_port: 9200,
+      dashboard_host_port: 29200,
       provisioner: "scripts/install_ngate.sh",
       args: [
         "ngate-2",
@@ -47,6 +51,15 @@ Vagrant.configure("2") do |config|
       service_host_port: 18080,
       provisioner: "scripts/install_nginx.sh",
       args: ["web-1"]
+    },
+    {
+      name: "zipkin-1",
+      hostname: "zipkin-1",
+      ip: "192.168.56.31",
+      service_guest_port: 9411,
+      service_host_port: 39411,
+      provisioner: "scripts/install_zipkin.sh",
+      args: ["zipkin-1"]
     }
   ]
 
@@ -63,6 +76,13 @@ Vagrant.configure("2") do |config|
         node.vm.network "forwarded_port",
           guest: machine[:management_guest_port],
           host: machine[:management_host_port],
+          auto_correct: true
+      end
+
+      if machine[:dashboard_guest_port]
+        node.vm.network "forwarded_port",
+          guest: machine[:dashboard_guest_port],
+          host: machine[:dashboard_host_port],
           auto_correct: true
       end
 
