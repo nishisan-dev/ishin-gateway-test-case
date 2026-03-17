@@ -16,24 +16,33 @@ Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e são 
   - `libvirt` com `vagrant-libvirt`
   - ou `VirtualBox`
 
+## Topologia
+
+![Topologia do Lab](https://uml.nishisan.dev/proxy?src=https://raw.githubusercontent.com/nishisan-dev/n-gate-test-case/main/docs/diagrams/lab_topology.puml)
+
 ## Subir o ambiente
 
-Subir em sequência reduz problemas de bootstrap do cluster:
+A forma recomendada é usar o script `start.sh`, que sobe as VMs na ordem correta e exibe um resumo com todas as URLs ao final:
+
+```bash
+./start.sh
+```
+
+Para subir VMs específicas:
+
+```bash
+./start.sh web-1 zipkin-1
+```
+
+> O provider default é `libvirt`. Para usar VirtualBox, exporte: `VAGRANT_DEFAULT_PROVIDER=virtualbox`
+
+### Subir manualmente (alternativa)
 
 ```bash
 vagrant up web-1
 vagrant up zipkin-1
 vagrant up ngate-1
 vagrant up ngate-2
-```
-
-Com `libvirt`:
-
-```bash
-vagrant up web-1 --provider=libvirt
-vagrant up zipkin-1 --provider=libvirt
-vagrant up ngate-1 --provider=libvirt
-vagrant up ngate-2 --provider=libvirt
 ```
 
 ## Máquinas e rede
