@@ -10,6 +10,7 @@ cat <<'EOF' >/tmp/n-gate-hosts
 192.168.56.11 ngate-1
 192.168.56.12 ngate-2
 192.168.56.21 web-1
+192.168.56.31 zipkin-1
 EOF
 
 sed -i '/# BEGIN N-GATE LAB HOSTS/,/# END N-GATE LAB HOSTS/d' /etc/hosts
