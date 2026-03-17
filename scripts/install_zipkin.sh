@@ -9,8 +9,6 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 NODE_NAME="${1:?missing node name}"
-ZIPKIN_VERSION="3.4.4"
-ZIPKIN_JAR_URL="https://github.com/openzipkin/zipkin/releases/download/${ZIPKIN_VERSION}/zipkin-server-${ZIPKIN_VERSION}-exec.jar"
 ZIPKIN_DIR="/opt/zipkin"
 ZIPKIN_JAR="${ZIPKIN_DIR}/zipkin.jar"
 ZIPKIN_USER="zipkin"
@@ -25,10 +23,11 @@ fi
 
 mkdir -p "${ZIPKIN_DIR}"
 
-# ─── Download do JAR ────────────────────────────────────────────────────────
+# ─── Download do JAR via quickstart oficial ─────────────────────────────────
 if [[ ! -f "${ZIPKIN_JAR}" ]]; then
-  echo "Baixando Zipkin Server v${ZIPKIN_VERSION}..."
-  curl -fSL -o "${ZIPKIN_JAR}" "${ZIPKIN_JAR_URL}"
+  echo "Baixando Zipkin Server via quickstart oficial..."
+  cd "${ZIPKIN_DIR}"
+  curl -sSL https://zipkin.io/quickstart.sh | bash -s
 fi
 
 chown -R "${ZIPKIN_USER}:${ZIPKIN_USER}" "${ZIPKIN_DIR}"
