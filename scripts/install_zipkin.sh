@@ -64,6 +64,11 @@ path.logs: /var/log/elasticsearch
 
 # ─── Indices (contenção de disco) ────────────────────────────────────────────
 action.auto_create_index: true
+
+# ─── Watermark de disco (proteção contra disco cheio) ────────────────────────
+cluster.routing.allocation.disk.watermark.low: "85%"
+cluster.routing.allocation.disk.watermark.high: "90%"
+cluster.routing.allocation.disk.watermark.flood_stage: "95%"
 EOF
 
 # JVM Heap — limitar para não explodir a VM
@@ -86,31 +91,53 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-# ─── ILM: auto-delete de índices antigos (3 dias) ──────────────────────────
-# Cria policy de lifecycle para limpar traces antigos automaticamente
-curl -s -X PUT "http://127.0.0.1:9200/_ilm/policy/zipkin-retention" \
-  -H 'Content-Type: application/json' -d '{
-  "policy": {
-    "phases": {
-      "hot": {
-        "actions": {
-          "rollover": {
-            "max_age": "1d",
-            "max_primary_shard_size": "1gb"
-          }
-        }
-      },
-      "delete": {
-        "min_age": "3d",
-        "actions": {
-          "delete": {}
-        }
-      }
-    }
-  }
-}' || true
+# ─── Cleanup: systemd timer para deletar índices com mais de 1 dia ──────────
+cat <<'EOF' >/usr/local/bin/zipkin-index-cleanup.sh
+#!/usr/bin/env bash
+# Deleta índices zipkin-* com mais de 1 dia
+set -euo pipefail
 
-echo ""
+RETENTION_DAYS=1
+CUTOFF_DATE=$(date -d "-${RETENTION_DAYS} days" +%Y-%m-%d)
+
+# Lista todos os índices zipkin-*
+INDICES=$(curl -s "http://127.0.0.1:9200/_cat/indices/zipkin-*?h=index" 2>/dev/null || true)
+
+for index in ${INDICES}; do
+  # Extrai a data do nome do índice (ex: zipkin-span-2026-03-16)
+  INDEX_DATE=$(echo "${index}" | grep -oP '\d{4}-\d{2}-\d{2}$' || true)
+  if [[ -n "${INDEX_DATE}" && "${INDEX_DATE}" < "${CUTOFF_DATE}" ]]; then
+    echo "Deletando índice antigo: ${index} (data: ${INDEX_DATE})"
+    curl -s -X DELETE "http://127.0.0.1:9200/${index}" >/dev/null
+  fi
+done
+EOF
+chmod +x /usr/local/bin/zipkin-index-cleanup.sh
+
+cat <<EOF >/etc/systemd/system/zipkin-cleanup.service
+[Unit]
+Description=Zipkin ES index cleanup (retenção ${RETENTION_DAYS:-1} dia)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/zipkin-index-cleanup.sh
+EOF
+
+cat <<EOF >/etc/systemd/system/zipkin-cleanup.timer
+[Unit]
+Description=Executa limpeza diária de índices Zipkin
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+systemctl daemon-reload
+systemctl enable zipkin-cleanup.timer
+systemctl start zipkin-cleanup.timer
 
 # ─── Zipkin ─────────────────────────────────────────────────────────────────
 
