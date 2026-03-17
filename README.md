@@ -5,9 +5,9 @@ Projeto para subir quatro VMs locais com Vagrant:
 - `ngate-1`: Ubuntu + `n-gate v3.1.2` em cluster (com Dashboard de Observabilidade)
 - `ngate-2`: Ubuntu + `n-gate v3.1.2` em cluster (com Dashboard de Observabilidade)
 - `web-1`: Ubuntu + `nginx` (backend de teste)
-- `zipkin-1`: Ubuntu + `Zipkin Server` (coleta de traces distribuídos)
+- `zipkin-1`: Ubuntu + `Elasticsearch 8.x` + `Zipkin Server` (tracing com storage persistente)
 
-Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e são configurados para encaminhar requests para a VM `web-1`. Traces são exportados automaticamente para `zipkin-1`.
+Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e são configurados para encaminhar requests para a VM `web-1`. Traces são exportados automaticamente para `zipkin-1` e persistidos no Elasticsearch.
 
 ## Requisitos
 
@@ -15,6 +15,18 @@ Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e são 
 - Um provider suportado pelo box escolhido:
   - `libvirt` com `vagrant-libvirt`
   - ou `VirtualBox`
+
+### Recursos do host
+
+| VM | vCPUs | RAM | Papel |
+| --- | --- | --- | --- |
+| `ngate-1` | 2 | 2 GB | n-gate proxy + dashboard + cluster |
+| `ngate-2` | 2 | 2 GB | n-gate proxy + dashboard + cluster |
+| `web-1` | 2 | 1 GB | Nginx backend |
+| `zipkin-1` | 2 | 3 GB | Elasticsearch + Zipkin Server |
+| **Total** | **8** | **8 GB** | |
+
+> O host precisa de no mínimo **10 GB de RAM livre** (8 GB para VMs + overhead do hypervisor) e **~15 GB de disco** para os box images e dados.
 
 ## Topologia
 

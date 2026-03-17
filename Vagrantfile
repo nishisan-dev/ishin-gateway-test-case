@@ -63,7 +63,7 @@ Vagrant.configure("2") do |config|
       ip: "192.168.56.31",
       service_guest_port: 9411,
       service_host_port: 39411,
-      memory: 1024,
+      memory: 3072,
       provisioner: "scripts/install_zipkin.sh",
       args: ["zipkin-1"]
     }
