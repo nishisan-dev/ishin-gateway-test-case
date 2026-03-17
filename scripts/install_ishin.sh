@@ -8,21 +8,21 @@ NODE_IP="${2:?missing node ip}"
 UPSTREAM_IP="${3:?missing upstream ip}"
 UPSTREAM_PORT="${4:-80}"
 CLUSTER_SEEDS_CSV="${5:?missing cluster seeds}"
-NGATE_VERSION="3.2.0"
-PACKAGE_URL="https://github.com/nishisan-dev/n-gate/releases/download/v${NGATE_VERSION}/n-gate_${NGATE_VERSION}_all.deb"
-PACKAGE_PATH="/tmp/n-gate_${NGATE_VERSION}_all.deb"
-CLUSTER_DATA_DIR="/var/log/n-gate/ngrid-data"
-DASHBOARD_DATA_DIR="/var/lib/n-gate"
-RUNTIME_TMP_DIR="/var/log/n-gate/tmp"
+ISHIN_VERSION="3.2.0"
+PACKAGE_URL="https://github.com/nishisan-dev/ishin-gateway/releases/download/v${ISHIN_VERSION}/ishin-gateway_${ISHIN_VERSION}_all.deb"
+PACKAGE_PATH="/tmp/ishin-gateway_${ISHIN_VERSION}_all.deb"
+CLUSTER_DATA_DIR="/var/log/ishin-gateway/ngrid-data"
+DASHBOARD_DATA_DIR="/var/lib/ishin-gateway"
+RUNTIME_TMP_DIR="/var/log/ishin-gateway/tmp"
 
-if ! dpkg-query -W -f='${Version}' n-gate 2>/dev/null | grep -qx "${NGATE_VERSION}"; then
+if ! dpkg-query -W -f='${Version}' ishin-gateway 2>/dev/null | grep -qx "${ISHIN_VERSION}"; then
   apt-get install -y openjdk-21-jre-headless
   curl -fL "${PACKAGE_URL}" -o "${PACKAGE_PATH}"
   apt-get install -y "${PACKAGE_PATH}"
 fi
 
 mkdir -p "${CLUSTER_DATA_DIR}" "${RUNTIME_TMP_DIR}" "${DASHBOARD_DATA_DIR}"
-chown -R n-gate:n-gate /var/log/n-gate "${DASHBOARD_DATA_DIR}"
+chown -R ishin-gateway:ishin-gateway /var/log/ishin-gateway "${DASHBOARD_DATA_DIR}"
 
 SEEDS_YAML=""
 IFS=',' read -ra CLUSTER_SEEDS <<<"${CLUSTER_SEEDS_CSV}"
@@ -30,25 +30,25 @@ for seed in "${CLUSTER_SEEDS[@]}"; do
   SEEDS_YAML="${SEEDS_YAML}"$'\n'"    - \"${seed}\""
 done
 
-mkdir -p /etc/systemd/system/n-gate.service.d
+mkdir -p /etc/systemd/system/ishin-gateway.service.d
 
-cat <<EOF >/etc/systemd/system/n-gate.service.d/override.conf
+cat <<EOF >/etc/systemd/system/ishin-gateway.service.d/override.conf
 [Service]
-Environment=NGATE_CONFIG=/etc/n-gate/adapter.yaml
-Environment=NGATE_CLUSTER_NODE_ID=${NODE_NAME}
+Environment=ISHIN_CONFIG=/etc/ishin-gateway/adapter.yaml
+Environment=ISHIN_CLUSTER_NODE_ID=${NODE_NAME}
 Environment=TMPDIR=${RUNTIME_TMP_DIR}
 Environment=ZIPKIN_ENDPOINT=http://zipkin-1:9411/api/v2/spans
 ExecStart=
-ExecStart=/usr/bin/java -Djava.io.tmpdir=${RUNTIME_TMP_DIR} -Dlog4j.configurationFile=/etc/n-gate/log4j2.xml -jar /opt/n-gate/n-gate.jar
-ReadWritePaths=/var/log/n-gate
-ReadWritePaths=/var/lib/n-gate
+ExecStart=/usr/bin/java -Djava.io.tmpdir=${RUNTIME_TMP_DIR} -Dlog4j.configurationFile=/etc/ishin-gateway/log4j2.xml -jar /opt/ishin-gateway/ishin-gateway.jar
+ReadWritePaths=/var/log/ishin-gateway
+ReadWritePaths=/var/lib/ishin-gateway
 EOF
 
-cat <<EOF >/etc/n-gate/adapter.yaml
+cat <<EOF >/etc/ishin-gateway/adapter.yaml
 ---
 endpoints:
   default:
-    rulesBasePath: "/etc/n-gate/rules"
+    rulesBasePath: "/etc/ishin-gateway/rules"
 
     listeners:
       http:
@@ -86,7 +86,7 @@ cluster:
   enabled: true
   host: "${NODE_IP}"
   port: 7100
-  clusterName: "ngate-cluster"
+  clusterName: "ishin-cluster"
   seeds:${SEEDS_YAML}
   replicationFactor: 2
   dataDirectory: "${CLUSTER_DATA_DIR}"
@@ -113,17 +113,17 @@ dashboard:
     baseUrl: "http://zipkin-1:9411"
 EOF
 
-mkdir -p /etc/n-gate/rules/default
+mkdir -p /etc/ishin-gateway/rules/default
 
-cat <<'EOF' >/etc/n-gate/rules/default/Rules.groovy
+cat <<'EOF' >/etc/ishin-gateway/rules/default/Rules.groovy
 /**
  * Pass-through rule: every request is forwarded to the configured default backend.
  */
 EOF
 
 systemctl daemon-reload
-systemctl enable n-gate
-systemctl restart n-gate
+systemctl enable ishin-gateway
+systemctl restart ishin-gateway
 
 sleep 2
-systemctl --no-pager --full status n-gate
+systemctl --no-pager --full status ishin-gateway

@@ -1,10 +1,10 @@
-# Lab 1 — Cluster n-gate com Observabilidade Completa
+# Lab 1 — Cluster ishin-gateway com Observabilidade Completa
 
-Laboratório Vagrant que provisiona um cluster n-gate de dois nós com proxy reverso, dashboard de observabilidade embutido, e distributed tracing via Zipkin com storage persistente em Elasticsearch.
+Laboratório Vagrant que provisiona um cluster ishin-gateway de dois nós com proxy reverso, dashboard de observabilidade embutido, e distributed tracing via Zipkin com storage persistente em Elasticsearch.
 
 ## Objetivo
 
-Validar o funcionamento end-to-end do n-gate em cenário de cluster, incluindo:
+Validar o funcionamento end-to-end do ishin-gateway em cenário de cluster, incluindo:
 
 - **Proxy reverso** com load balancing para backend Nginx
 - **Cluster NGrid** com replicação de estado e deploy de rules distribuído
@@ -14,7 +14,7 @@ Validar o funcionamento end-to-end do n-gate em cenário de cluster, incluindo:
 
 ## Topologia
 
-![Topologia do Lab](https://uml.nishisan.dev/proxy?src=https://raw.githubusercontent.com/nishisan-dev/n-gate-test-case/main/docs/diagrams/lab_topology.puml)
+![Topologia do Lab](https://uml.nishisan.dev/proxy?src=https://raw.githubusercontent.com/nishisan-dev/ishin-gateway-test-case/main/docs/diagrams/lab_topology.puml)
 
 ### Rede privada
 
@@ -22,8 +22,8 @@ Todas as VMs estão conectadas via rede privada `192.168.56.0/24` no VirtualBox/
 
 | VM | IP | Função |
 | --- | --- | --- |
-| `ngate-1` | `192.168.56.11` | Nó proxy + dashboard + cluster |
-| `ngate-2` | `192.168.56.12` | Nó proxy + dashboard + cluster |
+| `ishin-1` | `192.168.56.11` | Nó proxy + dashboard + cluster |
+| `ishin-2` | `192.168.56.12` | Nó proxy + dashboard + cluster |
 | `web-1` | `192.168.56.21` | Backend Nginx |
 | `zipkin-1` | `192.168.56.31` | Elasticsearch + Zipkin Server |
 
@@ -35,12 +35,12 @@ Todas as VMs estão conectadas via rede privada `192.168.56.0/24` no VirtualBox/
                    └──────┬───────┘
                           │ HTTP :19090 / :29090
                    ┌──────▼───────┐
-              ┌────┤   n-gate     ├────┐
+              ┌────┤   ishin-gateway     ├────┐
               │    │  (cluster)   │    │
               │    └──────────────┘    │
               │                        │
      ┌────────▼────────┐    ┌─────────▼────────┐
-     │    ngate-1      │◄──►│    ngate-2       │  NGrid :7100
+     │    ishin-1      │◄──►│    ishin-2       │  NGrid :7100
      │  proxy + dash   │    │  proxy + dash    │  (replicação)
      └────────┬────────┘    └─────────┬────────┘
               │                        │
@@ -52,9 +52,9 @@ Todas as VMs estão conectadas via rede privada `192.168.56.0/24` no VirtualBox/
               │    (Nginx)      │
               └─────────────────┘
 
-     ngate-1 ──spans──►┐
+     ishin-1 ──spans──►┐
                         │   Brave/Zipkin
-     ngate-2 ──spans──►─┤   :9411
+     ishin-2 ──spans──►─┤   :9411
                         │
               ┌─────────▼───────┐
               │    zipkin-1     │
@@ -66,8 +66,8 @@ Todas as VMs estão conectadas via rede privada `192.168.56.0/24` no VirtualBox/
 
 | VM | vCPUs | RAM | Disco | Serviços |
 | --- | --- | --- | --- | --- |
-| `ngate-1` | 2 | 2 GB | ~2 GB | n-gate (JVM), H2 embedded |
-| `ngate-2` | 2 | 2 GB | ~2 GB | n-gate (JVM), H2 embedded |
+| `ishin-1` | 2 | 2 GB | ~2 GB | ishin-gateway (JVM), H2 embedded |
+| `ishin-2` | 2 | 2 GB | ~2 GB | ishin-gateway (JVM), H2 embedded |
 | `web-1` | 2 | 1 GB | ~1 GB | Nginx |
 | `zipkin-1` | 2 | 3 GB | ~5 GB | Elasticsearch (JVM), Zipkin (JVM) |
 | **Total** | **8** | **8 GB** | **~10 GB** | |
@@ -103,8 +103,8 @@ A ordem importa para o bootstrap do cluster:
 ```bash
 vagrant up web-1       # backend primeiro
 vagrant up zipkin-1    # tracing antes dos proxies
-vagrant up ngate-1     # primeiro nó do cluster
-vagrant up ngate-2     # segundo nó se conecta ao primeiro
+vagrant up ishin-1     # primeiro nó do cluster
+vagrant up ishin-2     # segundo nó se conecta ao primeiro
 ```
 
 > O provider default é `libvirt`. Para VirtualBox: `VAGRANT_DEFAULT_PROVIDER=virtualbox vagrant up`
@@ -115,12 +115,12 @@ vagrant up ngate-2     # segundo nó se conecta ao primeiro
 
 | Serviço | VM | Porta guest | Porta host | URL do host |
 | --- | --- | --- | --- | --- |
-| Proxy | `ngate-1` | 9090 | 19090 | http://localhost:19090 |
-| Proxy | `ngate-2` | 9090 | 29090 | http://localhost:29090 |
-| Management API | `ngate-1` | 9190 | 19190 | http://localhost:19190 |
-| Management API | `ngate-2` | 9190 | 29190 | http://localhost:29190 |
-| Dashboard | `ngate-1` | 9200 | 19200 | http://localhost:19200 |
-| Dashboard | `ngate-2` | 9200 | 29200 | http://localhost:29200 |
+| Proxy | `ishin-1` | 9090 | 19090 | http://localhost:19090 |
+| Proxy | `ishin-2` | 9090 | 29090 | http://localhost:29090 |
+| Management API | `ishin-1` | 9190 | 19190 | http://localhost:19190 |
+| Management API | `ishin-2` | 9190 | 29190 | http://localhost:29190 |
+| Dashboard | `ishin-1` | 9200 | 19200 | http://localhost:19200 |
+| Dashboard | `ishin-2` | 9200 | 29200 | http://localhost:29200 |
 | Nginx | `web-1` | 80 | 18080 | http://localhost:18080 |
 | Zipkin UI | `zipkin-1` | 9411 | 39411 | http://localhost:39411 |
 
@@ -133,11 +133,11 @@ vagrant up ngate-2     # segundo nó se conecta ao primeiro
 
 ## Componentes em detalhe
 
-### n-gate (ngate-1, ngate-2)
+### ishin-gateway (ishin-1, ishin-2)
 
-Cada nó roda o n-gate `v3.1.2` instalado via pacote `.deb` do GitHub Releases.
+Cada nó roda o ishin-gateway `v3.1.2` instalado via pacote `.deb` do GitHub Releases.
 
-**Configuração do proxy (`/etc/n-gate/adapter.yaml`):**
+**Configuração do proxy (`/etc/ishin-gateway/adapter.yaml`):**
 
 - Listener HTTP em `:9090` sem SSL/auth
 - Backend apontando para `web-1:80`
@@ -147,13 +147,13 @@ Cada nó roda o n-gate `v3.1.2` instalado via pacote `.deb` do GitHub Releases.
 **Cluster NGrid:**
 
 - Habilitado com `replicationFactor: 2`
-- Seeds cruzados: `ngate-1` → `ngate-2:7100` e vice-versa
-- Dados em `/var/log/n-gate/ngrid-data`
+- Seeds cruzados: `ishin-1` → `ishin-2:7100` e vice-versa
+- Dados em `/var/log/ishin-gateway/ngrid-data`
 
 **Dashboard de Observabilidade:**
 
 - Habilitado em `:9200`, bind `0.0.0.0`
-- Storage H2 em `/var/lib/n-gate`, retenção de 24h, scrape a cada 15s
+- Storage H2 em `/var/lib/ishin-gateway`, retenção de 24h, scrape a cada 15s
 - Proxy Zipkin habilitado, apontando para `http://zipkin-1:9411`
 - Allowlist: `127.0.0.1`, `::1`, `10.0.0.0/8`, `192.168.0.0/16`
 
@@ -161,7 +161,7 @@ Cada nó roda o n-gate `v3.1.2` instalado via pacote `.deb` do GitHub Releases.
 
 - `ZIPKIN_ENDPOINT=http://zipkin-1:9411/api/v2/spans` via systemd override
 - Sampling: 100% (ALWAYS_SAMPLE) — adequado para lab
-- Instance ID resolvido via hostname (`ngate-1`, `ngate-2`)
+- Instance ID resolvido via hostname (`ishin-1`, `ishin-2`)
 
 **Admin API:**
 
@@ -170,8 +170,8 @@ Cada nó roda o n-gate `v3.1.2` instalado via pacote `.deb` do GitHub Releases.
 
 **Systemd:**
 
-- Unit: `n-gate.service` com override em `/etc/systemd/system/n-gate.service.d/override.conf`
-- ReadWritePaths: `/var/log/n-gate`, `/var/lib/n-gate`
+- Unit: `ishin-gateway.service` com override em `/etc/systemd/system/ishin-gateway.service.d/override.conf`
+- ReadWritePaths: `/var/log/ishin-gateway`, `/var/lib/ishin-gateway`
 
 ### Nginx (web-1)
 
@@ -250,8 +250,8 @@ curl http://localhost:29090
 ### 3. Verificar cluster
 
 ```bash
-vagrant ssh ngate-1 -c "sudo journalctl -u n-gate -n 50 --no-pager | grep -i cluster"
-# Deve mostrar conexão com ngate-2
+vagrant ssh ishin-1 -c "sudo journalctl -u ishin-gateway -n 50 --no-pager | grep -i cluster"
+# Deve mostrar conexão com ishin-2
 ```
 
 ### 4. Verificar Zipkin
@@ -289,7 +289,7 @@ vagrant ssh zipkin-1 -c "curl -s http://127.0.0.1:9200/_cat/indices/zipkin-*?v"
 
 ```bash
 # Via CLI (dentro da VM)
-vagrant ssh ngate-1 -c "export NGATE_API_KEY=nishisan && ngate-cli list"
+vagrant ssh ishin-1 -c "export ISHIN_API_KEY=nishisan && ishin-cli list"
 
 # Via curl (do host)
 curl http://localhost:19190/admin/rules/list -H "X-API-Key: nishisan"
@@ -301,8 +301,8 @@ curl http://localhost:29190/admin/rules/list -H "X-API-Key: nishisan"
 ### Acessar VMs
 
 ```bash
-vagrant ssh ngate-1
-vagrant ssh ngate-2
+vagrant ssh ishin-1
+vagrant ssh ishin-2
 vagrant ssh web-1
 vagrant ssh zipkin-1
 ```
@@ -310,8 +310,8 @@ vagrant ssh zipkin-1
 ### Ver logs
 
 ```bash
-# n-gate
-vagrant ssh ngate-1 -c "sudo journalctl -u n-gate -f"
+# ishin-gateway
+vagrant ssh ishin-1 -c "sudo journalctl -u ishin-gateway -f"
 
 # Zipkin
 vagrant ssh zipkin-1 -c "sudo journalctl -u zipkin -f"
@@ -323,24 +323,24 @@ vagrant ssh zipkin-1 -c "sudo journalctl -u elasticsearch -f"
 ### Ver status dos serviços
 
 ```bash
-vagrant ssh ngate-1 -c "sudo systemctl status n-gate --no-pager"
+vagrant ssh ishin-1 -c "sudo systemctl status ishin-gateway --no-pager"
 vagrant ssh zipkin-1 -c "sudo systemctl status elasticsearch zipkin --no-pager"
 vagrant ssh web-1 -c "sudo systemctl status nginx --no-pager"
 ```
 
 ### Deploy ad-hoc (build local → VMs)
 
-Para testar builds locais do n-gate sem esperar release:
+Para testar builds locais do ishin-gateway sem esperar release:
 
 ```bash
 # Build e deploy em ambos os nós
 ../scripts/deploy_adhoc.sh
 
 # Apenas em um nó
-../scripts/deploy_adhoc.sh ngate-1
+../scripts/deploy_adhoc.sh ishin-1
 
 # Skip build, usar último JAR
-../scripts/deploy_adhoc.sh --skip-build ngate-2
+../scripts/deploy_adhoc.sh --skip-build ishin-2
 ```
 
 ### Forçar cleanup do Elasticsearch
@@ -371,7 +371,7 @@ vagrant destroy -f
 ## Arquivos do projeto
 
 ```
-n-gate-test-case/
+ishin-gateway-test-case/
 ├── Vagrantfile                     # Definição das 4 VMs
 ├── start.sh                        # Script de boot com banner
 ├── README.md                       # Quick reference
@@ -381,7 +381,7 @@ n-gate-test-case/
 │       └── lab_topology.puml       # Diagrama PlantUML da topologia
 └── scripts/
     ├── common.sh                   # Setup base (/etc/hosts, CA certs)
-    ├── install_ngate.sh            # Provisioning dos nós n-gate
+    ├── install_ishin.sh            # Provisioning dos nós ishin-gateway
     ├── install_nginx.sh            # Provisioning do backend Nginx
     └── install_zipkin.sh           # Provisioning do ES + Zipkin
 ```
@@ -395,12 +395,12 @@ vagrant status                     # verificar estado
 vagrant up <vm> --debug            # logs detalhados
 ```
 
-### n-gate não inicia
+### ishin-gateway não inicia
 
 ```bash
-vagrant ssh ngate-1 -c "sudo journalctl -u n-gate -n 100 --no-pager"
-vagrant ssh ngate-1 -c "cat /etc/n-gate/adapter.yaml"
-vagrant ssh ngate-1 -c "cat /etc/systemd/system/n-gate.service.d/override.conf"
+vagrant ssh ishin-1 -c "sudo journalctl -u ishin-gateway -n 100 --no-pager"
+vagrant ssh ishin-1 -c "cat /etc/ishin-gateway/adapter.yaml"
+vagrant ssh ishin-1 -c "cat /etc/systemd/system/ishin-gateway.service.d/override.conf"
 ```
 
 ### Zipkin não conecta no ES
@@ -414,7 +414,7 @@ vagrant ssh zipkin-1 -c "sudo journalctl -u zipkin -n 50 --no-pager"
 ### Traces não aparecem
 
 1. Verificar se tráfego foi gerado: `curl http://localhost:19090`
-2. Verificar se `ZIPKIN_ENDPOINT` está configurado: `vagrant ssh ngate-1 -c "cat /etc/systemd/system/n-gate.service.d/override.conf"`
+2. Verificar se `ZIPKIN_ENDPOINT` está configurado: `vagrant ssh ishin-1 -c "cat /etc/systemd/system/ishin-gateway.service.d/override.conf"`
 3. Verificar se Zipkin recebe spans: `vagrant ssh zipkin-1 -c "sudo journalctl -u zipkin -n 20 --no-pager"`
 4. Verificar índices no ES: `vagrant ssh zipkin-1 -c "curl -s http://127.0.0.1:9200/_cat/indices/zipkin-*?v"`
 

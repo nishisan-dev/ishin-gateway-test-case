@@ -4,7 +4,7 @@ skinparam backgroundColor #FEFEFE
 skinparam roundCorner 12
 skinparam defaultFontName Inter
 
-title n-gate Test Lab — Topologia de Rede
+title ishin-gateway Test Lab — Topologia de Rede
 
 cloud "Host Machine" as host {
   rectangle "Port Forwarding" as pf #E8E8E8 {
@@ -21,15 +21,15 @@ cloud "Host Machine" as host {
 
 package "Private Network — 192.168.56.0/24" as net #F0F8FF {
 
-  node "ngate-1\n192.168.56.11" as ngate1 #D4EDDA {
-    rectangle "n-gate proxy" as proxy1 #28A745
+  node "ishin-1\n192.168.56.11" as ishin1 #D4EDDA {
+    rectangle "ishin-gateway proxy" as proxy1 #28A745
     rectangle "Management API" as mgmt1 #17A2B8
     rectangle "Dashboard" as dash1 #6F42C1
     rectangle "Cluster :7100" as cluster1 #FFC107
   }
 
-  node "ngate-2\n192.168.56.12" as ngate2 #D4EDDA {
-    rectangle "n-gate proxy" as proxy2 #28A745
+  node "ishin-2\n192.168.56.12" as ishin2 #D4EDDA {
+    rectangle "ishin-gateway proxy" as proxy2 #28A745
     rectangle "Management API" as mgmt2 #17A2B8
     rectangle "Dashboard" as dash2 #6F42C1
     rectangle "Cluster :7100" as cluster2 #FFC107

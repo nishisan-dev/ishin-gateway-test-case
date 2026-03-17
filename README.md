@@ -1,13 +1,13 @@
-# Laboratório Vagrant para n-gate
+# Laboratório Vagrant para ishin-gateway
 
 Projeto para subir quatro VMs locais com Vagrant:
 
-- `ngate-1`: Ubuntu + `n-gate v3.1.2` em cluster (com Dashboard de Observabilidade)
-- `ngate-2`: Ubuntu + `n-gate v3.1.2` em cluster (com Dashboard de Observabilidade)
+- `ishin-1`: Ubuntu + `ishin-gateway v3.1.2` em cluster (com Dashboard de Observabilidade)
+- `ishin-2`: Ubuntu + `ishin-gateway v3.1.2` em cluster (com Dashboard de Observabilidade)
 - `web-1`: Ubuntu + `nginx` (backend de teste)
 - `zipkin-1`: Ubuntu + `Elasticsearch 8.x` + `Zipkin Server` (tracing com storage persistente)
 
-Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e são configurados para encaminhar requests para a VM `web-1`. Traces são exportados automaticamente para `zipkin-1` e persistidos no Elasticsearch.
+Os dois nós `ishin-gateway` formam um cluster NGrid com `replicationFactor: 2` e são configurados para encaminhar requests para a VM `web-1`. Traces são exportados automaticamente para `zipkin-1` e persistidos no Elasticsearch.
 
 ## Requisitos
 
@@ -20,8 +20,8 @@ Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e são 
 
 | VM | vCPUs | RAM | Papel |
 | --- | --- | --- | --- |
-| `ngate-1` | 2 | 2 GB | n-gate proxy + dashboard + cluster |
-| `ngate-2` | 2 | 2 GB | n-gate proxy + dashboard + cluster |
+| `ishin-1` | 2 | 2 GB | ishin-gateway proxy + dashboard + cluster |
+| `ishin-2` | 2 | 2 GB | ishin-gateway proxy + dashboard + cluster |
 | `web-1` | 2 | 1 GB | Nginx backend |
 | `zipkin-1` | 2 | 3 GB | Elasticsearch + Zipkin Server |
 | **Total** | **8** | **8 GB** | |
@@ -30,7 +30,7 @@ Os dois nós `n-gate` formam um cluster NGrid com `replicationFactor: 2` e são 
 
 ## Topologia
 
-![Topologia do Lab](https://uml.nishisan.dev/proxy?src=https://raw.githubusercontent.com/nishisan-dev/n-gate-test-case/main/docs/diagrams/lab_topology.puml)
+![Topologia do Lab](https://uml.nishisan.dev/proxy?src=https://raw.githubusercontent.com/nishisan-dev/ishin-gateway-test-case/main/docs/diagrams/lab_topology.puml)
 
 ## Subir o ambiente
 
@@ -53,16 +53,16 @@ Para subir VMs específicas:
 ```bash
 vagrant up web-1
 vagrant up zipkin-1
-vagrant up ngate-1
-vagrant up ngate-2
+vagrant up ishin-1
+vagrant up ishin-2
 ```
 
 ## Máquinas e rede
 
 | VM | IP privado | Serviços | Acesso do host |
 | --- | --- | --- | --- |
-| `ngate-1` | `192.168.56.11` | proxy `9090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:19090`, `http://localhost:19190`, `http://localhost:19200` |
-| `ngate-2` | `192.168.56.12` | proxy `9090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:29090`, `http://localhost:29190`, `http://localhost:29200` |
+| `ishin-1` | `192.168.56.11` | proxy `9090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:19090`, `http://localhost:19190`, `http://localhost:19200` |
+| `ishin-2` | `192.168.56.12` | proxy `9090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:29090`, `http://localhost:29190`, `http://localhost:29200` |
 | `web-1` | `192.168.56.21` | nginx `80` | `http://localhost:18080` |
 | `zipkin-1` | `192.168.56.31` | Zipkin `9411` | `http://localhost:39411` |
 
@@ -74,31 +74,31 @@ Testar o nginx diretamente:
 curl http://localhost:18080
 ```
 
-Testar o proxy no primeiro n-gate:
+Testar o proxy no primeiro ishin-gateway:
 
 ```bash
 curl http://localhost:19090
 ```
 
-Testar o proxy no segundo n-gate:
+Testar o proxy no segundo ishin-gateway:
 
 ```bash
 curl http://localhost:29090
 ```
 
-Se tudo estiver certo, os dois endpoints do `n-gate` devem retornar a página HTML servida pelo `nginx`.
+Se tudo estiver certo, os dois endpoints do `ishin-gateway` devem retornar a página HTML servida pelo `nginx`.
 
 ## Observabilidade
 
 ### Dashboard
 
-O Dashboard de Observabilidade está habilitado por padrão em ambos os nós n-gate:
+O Dashboard de Observabilidade está habilitado por padrão em ambos os nós ishin-gateway:
 
 ```bash
-# Dashboard do ngate-1
+# Dashboard do ishin-1
 curl http://localhost:19200/api/dashboard/health
 
-# Dashboard do ngate-2
+# Dashboard do ishin-2
 curl http://localhost:29200/api/dashboard/health
 ```
 
@@ -106,7 +106,7 @@ O Dashboard UI pode ser acessado diretamente no browser em `http://localhost:192
 
 ### Zipkin (Distributed Tracing)
 
-O Zipkin Server roda na VM `zipkin-1` e coleta traces de ambos os nós n-gate automaticamente:
+O Zipkin Server roda na VM `zipkin-1` e coleta traces de ambos os nós ishin-gateway automaticamente:
 
 ```bash
 # Health check do Zipkin
@@ -119,7 +119,7 @@ curl http://localhost:39411/health
 curl "http://localhost:39411/api/v2/traces?limit=5"
 ```
 
-O Dashboard do n-gate também faz proxy para o Zipkin, permitindo consultar traces diretamente pela UI:
+O Dashboard do ishin-gateway também faz proxy para o Zipkin, permitindo consultar traces diretamente pela UI:
 
 ```bash
 curl http://localhost:19200/api/dashboard/traces
@@ -127,22 +127,22 @@ curl http://localhost:19200/api/dashboard/traces
 
 ## Admin API e CLI
 
-A Admin API está habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` v3.1.2 instala o utilitário `ngate-cli` em `/usr/bin/`.
+A Admin API está habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` v3.1.2 instala o utilitário `ishin-cli` em `/usr/bin/`.
 
 ### Usar o CLI para gerenciar rules
 
 ```bash
-# Configurar a chave (uma vez, ou adicionar em /etc/n-gate/cli.conf)
-export NGATE_API_KEY="nishisan"
+# Configurar a chave (uma vez, ou adicionar em /etc/ishin-gateway/cli.conf)
+export ISHIN_API_KEY="nishisan"
 
 # Listar scripts do bundle ativo
-ngate-cli list
+ishin-cli list
 
 # Consultar versão ativa
-ngate-cli version
+ishin-cli version
 
 # Deploy de rules a partir de um diretório
-ngate-cli deploy /etc/n-gate/rules
+ishin-cli deploy /etc/ishin-gateway/rules
 ```
 
 ### Usar via curl (alternativa)
@@ -157,27 +157,27 @@ curl http://localhost:9190/admin/rules/version -H "X-API-Key: nishisan"
 # Deploy
 curl -X POST http://localhost:9190/admin/rules/deploy \
   -H "X-API-Key: nishisan" \
-  -F "scripts=@/etc/n-gate/rules/default/Rules.groovy"
+  -F "scripts=@/etc/ishin-gateway/rules/default/Rules.groovy"
 ```
 
 ### Deploy de rules em cluster
 
-Ao fazer deploy via CLI ou Admin API em qualquer nó, o bundle é replicado automaticamente para todos os nós do cluster via NGrid DistributedMap. Os scripts são materializados em `/etc/n-gate/rules` em todos os nós.
+Ao fazer deploy via CLI ou Admin API em qualquer nó, o bundle é replicado automaticamente para todos os nós do cluster via NGrid DistributedMap. Os scripts são materializados em `/etc/ishin-gateway/rules` em todos os nós.
 
 ## Cluster
 
 O cluster é configurado automaticamente com estes seeds:
 
-- `ngate-1` conhece `ngate-2:7100`
-- `ngate-2` conhece `ngate-1:7100`
+- `ishin-1` conhece `ishin-2:7100`
+- `ishin-2` conhece `ishin-1:7100`
 
-Cada nó recebe um `nodeId` fixo via `NGATE_CLUSTER_NODE_ID`.
+Cada nó recebe um `nodeId` fixo via `ISHIN_CLUSTER_NODE_ID`.
 
 Para verificar se os nós subiram, consulte os logs:
 
 ```bash
-vagrant ssh ngate-1 -c "sudo journalctl -u n-gate -n 100 --no-pager"
-vagrant ssh ngate-2 -c "sudo journalctl -u n-gate -n 100 --no-pager"
+vagrant ssh ishin-1 -c "sudo journalctl -u ishin-gateway -n 100 --no-pager"
+vagrant ssh ishin-2 -c "sudo journalctl -u ishin-gateway -n 100 --no-pager"
 vagrant ssh zipkin-1 -c "sudo journalctl -u zipkin -n 50 --no-pager"
 ```
 
@@ -193,14 +193,14 @@ curl http://localhost:29190/actuator/health
 Entrar em uma VM:
 
 ```bash
-vagrant ssh ngate-1
+vagrant ssh ishin-1
 vagrant ssh zipkin-1
 ```
 
 Ver status dos serviços:
 
 ```bash
-vagrant ssh ngate-1 -c "sudo systemctl status n-gate --no-pager"
+vagrant ssh ishin-1 -c "sudo systemctl status ishin-gateway --no-pager"
 vagrant ssh zipkin-1 -c "sudo systemctl status zipkin --no-pager"
 vagrant ssh web-1 -c "sudo systemctl status nginx --no-pager"
 ```

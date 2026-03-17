@@ -17,7 +17,7 @@ cat <<EOF >/var/www/html/index.html
 <body>
   <h1>${NODE_NAME}</h1>
   <p>Nginx provisioned by Vagrant.</p>
-  <p>If you are seeing this page through n-gate, the reverse proxy is working.</p>
+  <p>If you are seeing this page through ishin-gateway, the reverse proxy is working.</p>
 </body>
 </html>
 EOF

@@ -8,8 +8,8 @@ Vagrant.configure("2") do |config|
 
   machines = [
     {
-      name: "ngate-1",
-      hostname: "ngate-1",
+      name: "ishin-1",
+      hostname: "ishin-1",
       ip: "192.168.56.11",
       service_guest_port: 9090,
       service_host_port: 19090,
@@ -18,18 +18,18 @@ Vagrant.configure("2") do |config|
       dashboard_guest_port: 9200,
       dashboard_host_port: 19200,
       memory: 2048,
-      provisioner: "scripts/install_ngate.sh",
+      provisioner: "scripts/install_ishin.sh",
       args: [
-        "ngate-1",
+        "ishin-1",
         "192.168.56.11",
         "192.168.56.21",
         "80",
-        "ngate-2:7100"
+        "ishin-2:7100"
       ]
     },
     {
-      name: "ngate-2",
-      hostname: "ngate-2",
+      name: "ishin-2",
+      hostname: "ishin-2",
       ip: "192.168.56.12",
       service_guest_port: 9090,
       service_host_port: 29090,
@@ -38,13 +38,13 @@ Vagrant.configure("2") do |config|
       dashboard_guest_port: 9200,
       dashboard_host_port: 29200,
       memory: 2048,
-      provisioner: "scripts/install_ngate.sh",
+      provisioner: "scripts/install_ishin.sh",
       args: [
-        "ngate-2",
+        "ishin-2",
         "192.168.56.12",
         "192.168.56.21",
         "80",
-        "ngate-1:7100"
+        "ishin-1:7100"
       ]
     },
     {
@@ -98,7 +98,7 @@ Vagrant.configure("2") do |config|
       end
 
       node.vm.provider "virtualbox" do |vb|
-        vb.name = "n-gate-#{machine[:name]}"
+        vb.name = "ishin-gateway-#{machine[:name]}"
         vb.memory = machine[:memory]
         vb.cpus = 2
       end

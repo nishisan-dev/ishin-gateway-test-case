@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# start.sh — Sobe todo o laboratório n-gate na ordem correta
+# start.sh — Sobe todo o laboratório ishin-gateway na ordem correta
 #
 # Uso:
 #   ./start.sh              # sobe tudo
@@ -22,7 +22,7 @@ NC='\033[0m'
 SEPARATOR="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ─── Ordem de boot ───────────────────────────────────────────────────────────
-ALL_VMS=("web-1" "zipkin-1" "ngate-1" "ngate-2")
+ALL_VMS=("web-1" "zipkin-1" "ishin-1" "ishin-2")
 
 if [[ $# -gt 0 ]]; then
   TARGET_VMS=("$@")
@@ -47,7 +47,7 @@ done
 # ─── Banner final ───────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${SEPARATOR}${NC}"
-echo -e "${BOLD}  🚀 n-gate Lab — Resumo do Ambiente${NC}"
+echo -e "${BOLD}  🚀 ishin-gateway Lab — Resumo do Ambiente${NC}"
 echo -e "${BOLD}${SEPARATOR}${NC}"
 echo ""
 
@@ -81,8 +81,8 @@ if vm_ok "zipkin-1"; then
   echo ""
 fi
 
-if vm_ok "ngate-1"; then
-  echo -e "  ${GREEN}●${NC} ${BOLD}ngate-1${NC} ${DIM}(192.168.56.11)${NC}"
+if vm_ok "ishin-1"; then
+  echo -e "  ${GREEN}●${NC} ${BOLD}ishin-1${NC} ${DIM}(192.168.56.11)${NC}"
   echo -e "    🔀 Proxy:      ${CYAN}http://localhost:19090${NC}"
   echo -e "    ⚙️  Management: ${CYAN}http://localhost:19190${NC}"
   echo -e "    📊 Dashboard:  ${CYAN}http://localhost:19200${NC}"
@@ -90,8 +90,8 @@ if vm_ok "ngate-1"; then
   echo ""
 fi
 
-if vm_ok "ngate-2"; then
-  echo -e "  ${GREEN}●${NC} ${BOLD}ngate-2${NC} ${DIM}(192.168.56.12)${NC}"
+if vm_ok "ishin-2"; then
+  echo -e "  ${GREEN}●${NC} ${BOLD}ishin-2${NC} ${DIM}(192.168.56.12)${NC}"
   echo -e "    🔀 Proxy:      ${CYAN}http://localhost:29090${NC}"
   echo -e "    ⚙️  Management: ${CYAN}http://localhost:29190${NC}"
   echo -e "    📊 Dashboard:  ${CYAN}http://localhost:29200${NC}"
