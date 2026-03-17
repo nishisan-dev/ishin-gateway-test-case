@@ -12,6 +12,7 @@ NGATE_VERSION="3.1.2"
 PACKAGE_URL="https://github.com/nishisan-dev/n-gate/releases/download/v${NGATE_VERSION}/n-gate_${NGATE_VERSION}_all.deb"
 PACKAGE_PATH="/tmp/n-gate_${NGATE_VERSION}_all.deb"
 CLUSTER_DATA_DIR="/var/log/n-gate/ngrid-data"
+DASHBOARD_DATA_DIR="/var/lib/n-gate"
 RUNTIME_TMP_DIR="/var/log/n-gate/tmp"
 
 if ! dpkg-query -W -f='${Version}' n-gate 2>/dev/null | grep -qx "${NGATE_VERSION}"; then
@@ -20,8 +21,8 @@ if ! dpkg-query -W -f='${Version}' n-gate 2>/dev/null | grep -qx "${NGATE_VERSIO
   apt-get install -y "${PACKAGE_PATH}"
 fi
 
-mkdir -p "${CLUSTER_DATA_DIR}" "${RUNTIME_TMP_DIR}"
-chown -R n-gate:n-gate /var/log/n-gate
+mkdir -p "${CLUSTER_DATA_DIR}" "${RUNTIME_TMP_DIR}" "${DASHBOARD_DATA_DIR}"
+chown -R n-gate:n-gate /var/log/n-gate "${DASHBOARD_DATA_DIR}"
 
 SEEDS_YAML=""
 IFS=',' read -ra CLUSTER_SEEDS <<<"${CLUSTER_SEEDS_CSV}"
@@ -36,9 +37,11 @@ cat <<EOF >/etc/systemd/system/n-gate.service.d/override.conf
 Environment=NGATE_CONFIG=/etc/n-gate/adapter.yaml
 Environment=NGATE_CLUSTER_NODE_ID=${NODE_NAME}
 Environment=TMPDIR=${RUNTIME_TMP_DIR}
+Environment=ZIPKIN_ENDPOINT=http://zipkin-1:9411/api/v2/spans
 ExecStart=
 ExecStart=/usr/bin/java -Djava.io.tmpdir=${RUNTIME_TMP_DIR} -Dlog4j.configurationFile=/etc/n-gate/log4j2.xml -jar /opt/n-gate/n-gate.jar
 ReadWritePaths=/var/log/n-gate
+ReadWritePaths=/var/lib/n-gate
 EOF
 
 cat <<EOF >/etc/n-gate/adapter.yaml
@@ -91,6 +94,23 @@ cluster:
 admin:
   enabled: true
   apiKey: "nishisan"
+
+dashboard:
+  enabled: true
+  port: 9200
+  bindAddress: "0.0.0.0"
+  allowedIps:
+    - "127.0.0.1"
+    - "::1"
+    - "10.0.0.0/8"
+    - "192.168.0.0/16"
+  storage:
+    path: "${DASHBOARD_DATA_DIR}"
+    retentionHours: 24
+    scrapeIntervalSeconds: 15
+  zipkin:
+    enabled: true
+    baseUrl: "http://zipkin-1:9411"
 EOF
 
 mkdir -p /etc/n-gate/rules/default
