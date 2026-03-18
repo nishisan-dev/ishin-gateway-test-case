@@ -5,9 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 NODE_NAME="${1:?missing node name}"
 NODE_IP="${2:?missing node ip}"
-UPSTREAM_IP="${3:?missing upstream ip}"
-UPSTREAM_PORT="${4:-80}"
-CLUSTER_SEEDS_CSV="${5:?missing cluster seeds}"
+CLUSTER_SEEDS_CSV="${3:?missing cluster seeds}"
 ISHIN_VERSION="3.2.0"
 PACKAGE_URL="https://github.com/nishisan-dev/ishin-gateway/releases/download/v${ISHIN_VERSION}/ishin-gateway_${ISHIN_VERSION}_all.deb"
 PACKAGE_PATH="/tmp/ishin-gateway_${ISHIN_VERSION}_all.deb"
@@ -37,7 +35,6 @@ cat <<EOF >/etc/systemd/system/ishin-gateway.service.d/override.conf
 Environment=ISHIN_CONFIG=/etc/ishin-gateway/adapter.yaml
 Environment=ISHIN_CLUSTER_NODE_ID=${NODE_NAME}
 Environment=TMPDIR=${RUNTIME_TMP_DIR}
-Environment=ZIPKIN_ENDPOINT=http://zipkin-1:9411/api/v2/spans
 ExecStart=
 ExecStart=/usr/bin/java -Djava.io.tmpdir=${RUNTIME_TMP_DIR} -Dlog4j.configurationFile=/etc/ishin-gateway/log4j2.xml -jar /opt/ishin-gateway/ishin-gateway.jar
 ReadWritePaths=/var/log/ishin-gateway
@@ -46,42 +43,14 @@ EOF
 
 cat <<EOF >/etc/ishin-gateway/adapter.yaml
 ---
-endpoints:
-  default:
-    rulesBasePath: "/etc/ishin-gateway/rules"
+mode: tunnel
 
-    listeners:
-      http:
-        listenAddress: "0.0.0.0"
-        listenPort: 19090
-        virtualPort: 9090
-        ssl: false
-        scriptOnly: false
-        defaultBackend: "backend-1"
-        secured: false
-        urlContexts:
-          default:
-            context: "/*"
-            method: "ANY"
-            ruleMapping: "default/Rules.groovy"
-
-    backends:
-      backend-1:
-        backendName: "${NODE_NAME}-backend"
-        members:
-          - url: "http://${UPSTREAM_IP}:${UPSTREAM_PORT}"
-            weight: 1
-
-    ruleMapping: "default/Rules.groovy"
-    ruleMappingThreads: 1
-    socketTimeout: 30
-    jettyMinThreads: 16
-    jettyMaxThreads: 200
-    jettyIdleTimeout: 120000
-    connectionPoolSize: 128
-    connectionPoolKeepAliveMinutes: 5
-    dispatcherMaxRequests: 256
-    dispatcherMaxRequestsPerHost: 128
+tunnel:
+  loadBalancing: "least-connections"
+  missedKeepalives: 3
+  drainTimeout: 30
+  bindAddress: "0.0.0.0"
+  autoPromoteStandby: true
 
 cluster:
   enabled: true
@@ -109,24 +78,6 @@ dashboard:
     path: "${DASHBOARD_DATA_DIR}"
     retentionHours: 24
     scrapeIntervalSeconds: 15
-  zipkin:
-    enabled: true
-    baseUrl: "http://zipkin-1:9411"
-
-tunnel:
-  registration:
-    enabled: true
-    keepaliveInterval: 3
-    status: "ACTIVE"
-    weight: 100
-EOF
-
-mkdir -p /etc/ishin-gateway/rules/default
-
-cat <<'EOF' >/etc/ishin-gateway/rules/default/Rules.groovy
-/**
- * Pass-through rule: every request is forwarded to the configured default backend.
- */
 EOF
 
 systemctl daemon-reload

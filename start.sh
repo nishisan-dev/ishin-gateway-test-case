@@ -22,7 +22,7 @@ NC='\033[0m'
 SEPARATOR="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ─── Ordem de boot ───────────────────────────────────────────────────────────
-ALL_VMS=("web-1" "zipkin-1" "ishin-1" "ishin-2")
+ALL_VMS=("web-1" "zipkin-1" "tunnel-1" "ishin-1" "ishin-2")
 
 if [[ $# -gt 0 ]]; then
   TARGET_VMS=("$@")
@@ -81,6 +81,15 @@ if vm_ok "zipkin-1"; then
   echo ""
 fi
 
+if vm_ok "tunnel-1"; then
+  echo -e "  ${GREEN}●${NC} ${BOLD}tunnel-1${NC} ${DIM}(192.168.56.10)${NC}  ${YELLOW}[TUNNEL L4 LB]${NC}"
+  echo -e "    🔀 Tunnel:     ${CYAN}http://localhost:9090${NC}  ${DIM}(vPort → proxies)${NC}"
+  echo -e "    ⚙️  Management: ${CYAN}http://localhost:9190${NC}"
+  echo -e "    📊 Dashboard:  ${CYAN}http://localhost:9200${NC}"
+  echo -e "    🔗 Cluster:    ${DIM}192.168.56.10:7100${NC}"
+  echo ""
+fi
+
 if vm_ok "ishin-1"; then
   echo -e "  ${GREEN}●${NC} ${BOLD}ishin-1${NC} ${DIM}(192.168.56.11)${NC}"
   echo -e "    🔀 Proxy:      ${CYAN}http://localhost:19090${NC}"
@@ -100,6 +109,7 @@ if vm_ok "ishin-2"; then
 fi
 
 echo -e "${BOLD}${SEPARATOR}${NC}"
-echo -e "  ${DIM}Teste rápido: curl http://localhost:19090${NC}"
+echo -e "  ${DIM}Teste rápido (via tunnel):  curl http://localhost:9090${NC}"
+echo -e "  ${DIM}Teste direto (proxy ishin-1): curl http://localhost:19090${NC}"
 echo -e "${BOLD}${SEPARATOR}${NC}"
 echo ""

@@ -8,10 +8,28 @@ Vagrant.configure("2") do |config|
 
   machines = [
     {
+      name: "tunnel-1",
+      hostname: "tunnel-1",
+      ip: "192.168.56.10",
+      service_guest_port: 9090,
+      service_host_port: 9090,
+      management_guest_port: 9190,
+      management_host_port: 9190,
+      dashboard_guest_port: 9200,
+      dashboard_host_port: 9200,
+      memory: 2048,
+      provisioner: "scripts/install_ishin_tunnel.sh",
+      args: [
+        "tunnel-1",
+        "192.168.56.10",
+        "tunnel-1:7100,ishin-1:7100,ishin-2:7100"
+      ]
+    },
+    {
       name: "ishin-1",
       hostname: "ishin-1",
       ip: "192.168.56.11",
-      service_guest_port: 9090,
+      service_guest_port: 19090,
       service_host_port: 19090,
       management_guest_port: 9190,
       management_host_port: 19190,
@@ -24,14 +42,14 @@ Vagrant.configure("2") do |config|
         "192.168.56.11",
         "192.168.56.21",
         "80",
-        "ishin-2:7100"
+        "tunnel-1:7100,ishin-2:7100"
       ]
     },
     {
       name: "ishin-2",
       hostname: "ishin-2",
       ip: "192.168.56.12",
-      service_guest_port: 9090,
+      service_guest_port: 19090,
       service_host_port: 29090,
       management_guest_port: 9190,
       management_host_port: 29190,
@@ -44,7 +62,7 @@ Vagrant.configure("2") do |config|
         "192.168.56.12",
         "192.168.56.21",
         "80",
-        "ishin-1:7100"
+        "tunnel-1:7100,ishin-1:7100"
       ]
     },
     {

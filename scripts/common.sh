@@ -7,6 +7,7 @@ apt-get update
 apt-get install -y ca-certificates curl
 
 cat <<'EOF' >/tmp/ishin-gateway-hosts
+192.168.56.10 tunnel-1
 192.168.56.11 ishin-1
 192.168.56.12 ishin-2
 192.168.56.21 web-1

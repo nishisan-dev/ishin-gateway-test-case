@@ -1,13 +1,14 @@
 # Laboratório Vagrant para ishin-gateway
 
-Projeto para subir quatro VMs locais com Vagrant:
+Projeto para subir cinco VMs locais com Vagrant:
 
-- `ishin-1`: Ubuntu + `ishin-gateway v3.1.2` em cluster (com Dashboard de Observabilidade)
-- `ishin-2`: Ubuntu + `ishin-gateway v3.1.2` em cluster (com Dashboard de Observabilidade)
+- `tunnel-1`: Ubuntu + `ishin-gateway v3.2.0` em **modo tunnel** (L4 TCP load balancer + Dashboard)
+- `ishin-1`: Ubuntu + `ishin-gateway v3.2.0` em modo proxy + cluster (com Dashboard de Observabilidade)
+- `ishin-2`: Ubuntu + `ishin-gateway v3.2.0` em modo proxy + cluster (com Dashboard de Observabilidade)
 - `web-1`: Ubuntu + `nginx` (backend de teste)
 - `zipkin-1`: Ubuntu + `Elasticsearch 8.x` + `Zipkin Server` (tracing com storage persistente)
 
-Os dois nós `ishin-gateway` formam um cluster NGrid com `replicationFactor: 2` e são configurados para encaminhar requests para a VM `web-1`. Traces são exportados automaticamente para `zipkin-1` e persistidos no Elasticsearch.
+O nó `tunnel-1` atua como ponto de entrada L4, recebendo conexões TCP e distribuindo entre os proxies registrados. Os dois nós proxy formam um cluster NGrid com `tunnel-1`, registram-se automaticamente no tunnel via `tunnel.registration`, e encaminham requests para `web-1`. Traces são exportados para `zipkin-1`.
 
 ## Requisitos
 
@@ -20,13 +21,14 @@ Os dois nós `ishin-gateway` formam um cluster NGrid com `replicationFactor: 2` 
 
 | VM | vCPUs | RAM | Papel |
 | --- | --- | --- | --- |
+| `tunnel-1` | 2 | 2 GB | ishin-gateway tunnel L4 LB + dashboard + cluster |
 | `ishin-1` | 2 | 2 GB | ishin-gateway proxy + dashboard + cluster |
 | `ishin-2` | 2 | 2 GB | ishin-gateway proxy + dashboard + cluster |
 | `web-1` | 2 | 1 GB | Nginx backend |
 | `zipkin-1` | 2 | 3 GB | Elasticsearch + Zipkin Server |
-| **Total** | **8** | **8 GB** | |
+| **Total** | **10** | **10 GB** | |
 
-> O host precisa de no mínimo **10 GB de RAM livre** (8 GB para VMs + overhead do hypervisor) e **~15 GB de disco** para os box images e dados.
+> O host precisa de no mínimo **12 GB de RAM livre** (10 GB para VMs + overhead do hypervisor) e **~20 GB de disco** para os box images e dados.
 
 ## Topologia
 
@@ -53,6 +55,7 @@ Para subir VMs específicas:
 ```bash
 vagrant up web-1
 vagrant up zipkin-1
+vagrant up tunnel-1
 vagrant up ishin-1
 vagrant up ishin-2
 ```
@@ -61,8 +64,9 @@ vagrant up ishin-2
 
 | VM | IP privado | Serviços | Acesso do host |
 | --- | --- | --- | --- |
-| `ishin-1` | `192.168.56.11` | proxy `9090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:19090`, `http://localhost:19190`, `http://localhost:19200` |
-| `ishin-2` | `192.168.56.12` | proxy `9090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:29090`, `http://localhost:29190`, `http://localhost:29200` |
+| `tunnel-1` | `192.168.56.10` | tunnel `9090` (vPort), management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:9090`, `http://localhost:9190`, `http://localhost:9200` |
+| `ishin-1` | `192.168.56.11` | proxy `19090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:19090`, `http://localhost:19190`, `http://localhost:19200` |
+| `ishin-2` | `192.168.56.12` | proxy `19090`, management `9190`, dashboard `9200`, cluster `7100` | `http://localhost:29090`, `http://localhost:29190`, `http://localhost:29200` |
 | `web-1` | `192.168.56.21` | nginx `80` | `http://localhost:18080` |
 | `zipkin-1` | `192.168.56.31` | Zipkin `9411` | `http://localhost:39411` |
 
@@ -74,19 +78,20 @@ Testar o nginx diretamente:
 curl http://localhost:18080
 ```
 
-Testar o proxy no primeiro ishin-gateway:
+Testar via tunnel (L4 LB → proxy → nginx):
+
+```bash
+curl http://localhost:9090
+```
+
+Testar o proxy diretamente (bypass tunnel):
 
 ```bash
 curl http://localhost:19090
-```
-
-Testar o proxy no segundo ishin-gateway:
-
-```bash
 curl http://localhost:29090
 ```
 
-Se tudo estiver certo, os dois endpoints do `ishin-gateway` devem retornar a página HTML servida pelo `nginx`.
+Se tudo estiver certo, todos os endpoints devem retornar a página HTML servida pelo `nginx`.
 
 ## Observabilidade
 
@@ -166,16 +171,18 @@ Ao fazer deploy via CLI ou Admin API em qualquer nó, o bundle é replicado auto
 
 ## Cluster
 
-O cluster é configurado automaticamente com estes seeds:
+O cluster NGrid é formado por 3 nós com seeds cruzados:
 
-- `ishin-1` conhece `ishin-2:7100`
-- `ishin-2` conhece `ishin-1:7100`
+- `tunnel-1` conhece `ishin-1:7100`, `ishin-2:7100`
+- `ishin-1` conhece `tunnel-1:7100`, `ishin-2:7100`
+- `ishin-2` conhece `tunnel-1:7100`, `ishin-1:7100`
 
 Cada nó recebe um `nodeId` fixo via `ISHIN_CLUSTER_NODE_ID`.
 
 Para verificar se os nós subiram, consulte os logs:
 
 ```bash
+vagrant ssh tunnel-1 -c "sudo journalctl -u ishin-gateway -n 100 --no-pager"
 vagrant ssh ishin-1 -c "sudo journalctl -u ishin-gateway -n 100 --no-pager"
 vagrant ssh ishin-2 -c "sudo journalctl -u ishin-gateway -n 100 --no-pager"
 vagrant ssh zipkin-1 -c "sudo journalctl -u zipkin -n 50 --no-pager"
