@@ -1,0 +1,40 @@
+---
+mode: tunnel
+
+tunnel:
+  loadBalancing: "least-connections"
+  missedKeepalives: 3
+  drainTimeout: 30
+  bindAddress: "0.0.0.0"
+  autoPromoteStandby: true
+
+cluster:
+  enabled: true
+  host: "tunnel-1"
+  port: 7100
+  clusterName: "ishin-cluster"
+  seeds:
+    - "tunnel-1:7100"
+    - "ishin-1:7100"
+    - "ishin-2:7100"
+  replicationFactor: 2
+  dataDirectory: "/app/data/ngrid-data"
+
+admin:
+  enabled: true
+  apiKey: "nishisan"
+
+dashboard:
+  enabled: true
+  port: 9200
+  bindAddress: "0.0.0.0"
+  allowedIps:
+    - "127.0.0.1"
+    - "::1"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+  storage:
+    path: "/app/data/dashboard"
+    retentionHours: 24
+    scrapeIntervalSeconds: 15

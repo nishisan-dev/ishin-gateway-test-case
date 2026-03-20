@@ -1,0 +1,100 @@
+@startuml docker_lab_topology
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+skinparam roundCorner 12
+skinparam defaultFontName Inter
+
+title ishin-gateway Test Lab (Docker) — Topologia de Rede
+
+cloud "Host Machine" as host {
+  rectangle "Port Mapping" as pf #E8E8E8 {
+    portin "9090" as p9090
+    portin "9190" as p9190
+    portin "9200" as p9200
+    portin "19090" as p19090
+    portin "29090" as p29090
+    portin "19190" as p19190
+    portin "29190" as p29190
+    portin "19200" as p19200
+    portin "29200" as p29200
+    portin "18080" as p18080
+    portin "39411" as p39411
+  }
+}
+
+package "Docker Network (bridge)" as net #F0F8FF {
+
+  node "tunnel-1" as tunnel1 #FCE4EC {
+    rectangle "ishin-gateway tunnel" as tun1 #E91E63
+    rectangle "Management API" as tunmgmt #17A2B8
+    rectangle "Dashboard" as tundash #6F42C1
+    rectangle "Cluster :7100" as tuncluster #FFC107
+  }
+
+  node "ishin-1" as ishin1 #D4EDDA {
+    rectangle "ishin-gateway proxy" as proxy1 #28A745
+    rectangle "Management API" as mgmt1 #17A2B8
+    rectangle "Dashboard" as dash1 #6F42C1
+    rectangle "Cluster :7100" as cluster1 #FFC107
+  }
+
+  node "ishin-2" as ishin2 #D4EDDA {
+    rectangle "ishin-gateway proxy" as proxy2 #28A745
+    rectangle "Management API" as mgmt2 #17A2B8
+    rectangle "Dashboard" as dash2 #6F42C1
+    rectangle "Cluster :7100" as cluster2 #FFC107
+  }
+
+  node "web-1" as web1 #FFF3CD {
+    rectangle "Nginx :80" as nginx #FD7E14
+  }
+
+  node "zipkin-1" as zipkin1 #D1ECF1 {
+    rectangle "Zipkin :9411" as zipkin #007BFF
+  }
+}
+
+' ─── Port Mapping ───
+p9090 --> tun1 : :9090
+p9190 --> tunmgmt : :9190
+p9200 --> tundash : :9200
+p19090 --> proxy1 : :19090
+p29090 --> proxy2 : :19090
+p19190 --> mgmt1 : :9190
+p29190 --> mgmt2 : :9190
+p19200 --> dash1 : :9200
+p29200 --> dash2 : :9200
+p18080 --> nginx : :80
+p39411 --> zipkin : :9411
+
+' ─── Tunnel → Proxies (L4 LB) ───
+tun1 -[#E91E63,bold]-> proxy1 : L4 LB
+tun1 -[#E91E63,bold]-> proxy2 : L4 LB
+
+' ─── Proxy → Backend ───
+proxy1 -[#28A745,bold]-> nginx : upstream
+proxy2 -[#28A745,bold]-> nginx : upstream
+
+' ─── Cluster NGrid ───
+tuncluster <-[#FFC107,dashed]-> cluster1 : NGrid\nreplication
+tuncluster <-[#FFC107,dashed]-> cluster2 : NGrid\nreplication
+cluster1 <-[#FFC107,dashed]-> cluster2 : NGrid\nreplication
+
+' ─── Tracing (spans) ───
+proxy1 -[#007BFF,dotted]-> zipkin : spans\n(Brave/Zipkin)
+proxy2 -[#007BFF,dotted]-> zipkin : spans\n(Brave/Zipkin)
+
+' ─── Dashboard → Zipkin (query proxy) ───
+dash1 -[#6F42C1,dotted]-> zipkin : trace\nquery
+dash2 -[#6F42C1,dotted]-> zipkin : trace\nquery
+
+legend right
+  |= Cor |= Fluxo |
+  | <#E91E63> | Tunnel → Proxies (L4 LB) |
+  | <#28A745> | Proxy → Backend (upstream) |
+  | <#FFC107> | Cluster NGrid (replicação) |
+  | <#007BFF> | Spans → Zipkin (tracing) |
+  | <#6F42C1> | Dashboard → Zipkin (query) |
+endlegend
+
+@enduml

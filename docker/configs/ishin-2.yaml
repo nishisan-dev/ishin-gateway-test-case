@@ -1,0 +1,77 @@
+---
+endpoints:
+  default:
+    rulesBasePath: "/app/rules"
+
+    listeners:
+      http:
+        listenAddress: "0.0.0.0"
+        listenPort: 19090
+        virtualPort: 9090
+        ssl: false
+        scriptOnly: false
+        defaultBackend: "backend-1"
+        secured: false
+        urlContexts:
+          default:
+            context: "/*"
+            method: "ANY"
+            ruleMapping: "default/Rules.groovy"
+
+    backends:
+      backend-1:
+        backendName: "ishin-2-backend"
+        members:
+          - url: "http://web-1:80"
+            weight: 1
+
+    ruleMapping: "default/Rules.groovy"
+    ruleMappingThreads: 1
+    socketTimeout: 30
+    jettyMinThreads: 16
+    jettyMaxThreads: 200
+    jettyIdleTimeout: 120000
+    connectionPoolSize: 128
+    connectionPoolKeepAliveMinutes: 5
+    dispatcherMaxRequests: 256
+    dispatcherMaxRequestsPerHost: 128
+
+cluster:
+  enabled: true
+  host: "ishin-2"
+  port: 7100
+  clusterName: "ishin-cluster"
+  seeds:
+    - "tunnel-1:7100"
+    - "ishin-1:7100"
+  replicationFactor: 2
+  dataDirectory: "/app/data/ngrid-data"
+
+admin:
+  enabled: true
+  apiKey: "nishisan"
+
+dashboard:
+  enabled: true
+  port: 9200
+  bindAddress: "0.0.0.0"
+  allowedIps:
+    - "127.0.0.1"
+    - "::1"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+  storage:
+    path: "/app/data/dashboard"
+    retentionHours: 24
+    scrapeIntervalSeconds: 15
+  zipkin:
+    enabled: true
+    baseUrl: "http://zipkin-1:9411"
+
+tunnel:
+  registration:
+    enabled: true
+    keepaliveInterval: 3
+    status: "ACTIVE"
+    weight: 100

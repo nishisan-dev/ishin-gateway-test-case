@@ -1,0 +1,139 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# ishin-gateway Test Lab — Docker Compose
+#
+# Réplica da topologia Vagrant usando a imagem lnishisan/ishin-gateway:latest.
+#
+# Uso:
+#   docker compose up -d
+#   docker compose down
+#
+# Ou via script:
+#   ./start.sh
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ─── Backend HTTP (Nginx) ──────────────────────────────────────────────────
+  web-1:
+    image: nginx:alpine
+    hostname: web-1
+    volumes:
+      - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./configs/nginx/index.html:/usr/share/nginx/html/index.html:ro
+    ports:
+      - "18080:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+    restart: unless-stopped
+
+  # ─── Zipkin (Distributed Tracing — in-memory) ─────────────────────────────
+  zipkin-1:
+    image: openzipkin/zipkin:3.5
+    hostname: zipkin-1
+    ports:
+      - "39411:9411"
+    environment:
+      STORAGE_TYPE: mem
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9411/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # ─── Tunnel L4 LB + Dashboard + Cluster ───────────────────────────────────
+  # NOTA: os 3 nós do cluster (tunnel-1, ishin-1, ishin-2) sobem em paralelo
+  # para permitir a formação do quórum NGrid. Se dependessem sequencialmente,
+  # o healthcheck do primeiro falharia antes dos demais subirem (deadlock).
+  tunnel-1:
+    image: lnishisan/ishin-gateway:latest
+    hostname: tunnel-1
+    depends_on:
+      web-1:
+        condition: service_healthy
+      zipkin-1:
+        condition: service_healthy
+    environment:
+      ISHIN_CONFIG: config/tunnel-1.yaml
+      ISHIN_CLUSTER_NODE_ID: tunnel-1
+      TRACING_ENABLED: "false"
+    volumes:
+      - ./configs/tunnel-1.yaml:/app/config/tunnel-1.yaml:ro
+      - tunnel-1-data:/app/data
+    ports:
+      - "9090:9090"
+      - "9190:9190"
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9200/api/dashboard/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # ─── Proxy 1 + Dashboard + Cluster ────────────────────────────────────────
+  ishin-1:
+    image: lnishisan/ishin-gateway:latest
+    hostname: ishin-1
+    depends_on:
+      web-1:
+        condition: service_healthy
+      zipkin-1:
+        condition: service_healthy
+    environment:
+      ISHIN_CONFIG: config/ishin-1.yaml
+      ISHIN_CLUSTER_NODE_ID: ishin-1
+      ZIPKIN_ENDPOINT: http://zipkin-1:9411/api/v2/spans
+    volumes:
+      - ./configs/ishin-1.yaml:/app/config/ishin-1.yaml:ro
+      - ./configs/rules:/app/rules:ro
+      - ishin-1-data:/app/data
+    ports:
+      - "19090:19090"
+      - "19190:9190"
+      - "19200:9200"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9190/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # ─── Proxy 2 + Dashboard + Cluster ────────────────────────────────────────
+  ishin-2:
+    image: lnishisan/ishin-gateway:latest
+    hostname: ishin-2
+    depends_on:
+      web-1:
+        condition: service_healthy
+      zipkin-1:
+        condition: service_healthy
+    environment:
+      ISHIN_CONFIG: config/ishin-2.yaml
+      ISHIN_CLUSTER_NODE_ID: ishin-2
+      ZIPKIN_ENDPOINT: http://zipkin-1:9411/api/v2/spans
+    volumes:
+      - ./configs/ishin-2.yaml:/app/config/ishin-2.yaml:ro
+      - ./configs/rules:/app/rules:ro
+      - ishin-2-data:/app/data
+    ports:
+      - "29090:19090"
+      - "29190:9190"
+      - "29200:9200"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9190/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  tunnel-1-data:
+  ishin-1-data:
+  ishin-2-data:
