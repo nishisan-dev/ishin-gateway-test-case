@@ -2,7 +2,7 @@
 mode: tunnel
 
 tunnel:
-  loadBalancing: "round-robin"
+  loadBalancing: "least-connections"
   missedKeepalives: 3
   drainTimeout: 30
   bindAddress: "0.0.0.0"

@@ -48,6 +48,9 @@ services:
   # NOTA: os 3 nós do cluster (tunnel-1, ishin-1, ishin-2) sobem em paralelo
   # para permitir a formação do quórum NGrid. Se dependessem sequencialmente,
   # o healthcheck do primeiro falharia antes dos demais subirem (deadlock).
+  #
+  # Profile padrão: round-robin
+  # Profile 'lc':   least-connections (docker compose --profile lc up -d)
   tunnel-1:
     image: lnishisan/ishin-gateway:latest
     hostname: tunnel-1
@@ -62,6 +65,35 @@ services:
       TRACING_ENABLED: "false"
     volumes:
       - ./configs/tunnel-1.yaml:/app/config/tunnel-1.yaml:ro
+      - tunnel-1-data:/app/data
+    ports:
+      - "9090:9090"
+      - "9190:9190"
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9200/api/dashboard/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # ─── Tunnel L4 LB (Least Connections) — profile 'lc' ──────────────────────
+  tunnel-1-lc:
+    image: lnishisan/ishin-gateway:latest
+    hostname: tunnel-1
+    profiles: ["lc"]
+    depends_on:
+      web-1:
+        condition: service_healthy
+      zipkin-1:
+        condition: service_healthy
+    environment:
+      ISHIN_CONFIG: config/tunnel-1-lc.yaml
+      ISHIN_CLUSTER_NODE_ID: tunnel-1
+      TRACING_ENABLED: "false"
+    volumes:
+      - ./configs/tunnel-1-lc.yaml:/app/config/tunnel-1-lc.yaml:ro
       - tunnel-1-data:/app/data
     ports:
       - "9090:9090"

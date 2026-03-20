@@ -42,6 +42,21 @@ cd docker/
 docker compose up -d
 ```
 
+### Profiles de Load Balancing
+
+O tunnel suporta dois algoritmos via Docker Compose profiles:
+
+| Comando | Algoritmo | Config |
+| --- | --- | --- |
+| `docker compose up -d` | **round-robin** (padrão) | `tunnel-1.yaml` |
+| `docker compose --profile lc up -d` | **least-connections** | `tunnel-1-lc.yaml` |
+
+> **Nota:** Ao usar o profile `lc`, pare o tunnel padrão antes para evitar conflito de portas:
+> ```bash
+> docker compose down -v
+> docker compose --profile lc up -d
+> ```
+
 ## Máquinas e rede
 
 | Container | Serviços | Acesso do host |
