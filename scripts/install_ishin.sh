@@ -8,18 +8,16 @@ NODE_IP="${2:?missing node ip}"
 UPSTREAM_IP="${3:?missing upstream ip}"
 UPSTREAM_PORT="${4:-80}"
 CLUSTER_SEEDS_CSV="${5:?missing cluster seeds}"
-ISHIN_VERSION="3.2.2"
-PACKAGE_URL="https://github.com/nishisan-dev/ishin-gateway/releases/download/v${ISHIN_VERSION}/ishin-gateway_${ISHIN_VERSION}_all.deb"
-PACKAGE_PATH="/tmp/ishin-gateway_${ISHIN_VERSION}_all.deb"
+PACKAGE_URL="https://github.com/nishisan-dev/ishin-gateway/releases/latest/download/ishin-gateway_latest_all.deb"
+PACKAGE_PATH="/tmp/ishin-gateway_latest_all.deb"
 CLUSTER_DATA_DIR="/var/log/ishin-gateway/ngrid-data"
 DASHBOARD_DATA_DIR="/var/lib/ishin-gateway"
 RUNTIME_TMP_DIR="/var/log/ishin-gateway/tmp"
 
-if ! dpkg-query -W -f='${Version}' ishin-gateway 2>/dev/null | grep -qx "${ISHIN_VERSION}"; then
-  apt-get install -y openjdk-21-jre-headless
-  curl -fL "${PACKAGE_URL}" -o "${PACKAGE_PATH}"
-  apt-get install -y "${PACKAGE_PATH}"
-fi
+apt-get install -y openjdk-21-jre-headless
+curl -fL "${PACKAGE_URL}" -o "${PACKAGE_PATH}"
+apt-get install -y "${PACKAGE_PATH}"
+
 
 mkdir -p "${CLUSTER_DATA_DIR}" "${RUNTIME_TMP_DIR}" "${DASHBOARD_DATA_DIR}"
 chown -R ishin-gateway:ishin-gateway /var/log/ishin-gateway "${DASHBOARD_DATA_DIR}"

@@ -2,9 +2,9 @@
 
 Projeto para subir cinco VMs locais com Vagrant:
 
-- `tunnel-1`: Ubuntu + `ishin-gateway v3.2.0` em **modo tunnel** (L4 TCP load balancer + Dashboard)
-- `ishin-1`: Ubuntu + `ishin-gateway v3.2.0` em modo proxy + cluster (com Dashboard de Observabilidade)
-- `ishin-2`: Ubuntu + `ishin-gateway v3.2.0` em modo proxy + cluster (com Dashboard de Observabilidade)
+- `tunnel-1`: Ubuntu + `ishin-gateway latest` em **modo tunnel** (L4 TCP load balancer + Dashboard)
+- `ishin-1`: Ubuntu + `ishin-gateway latest` em modo proxy + cluster (com Dashboard de Observabilidade)
+- `ishin-2`: Ubuntu + `ishin-gateway latest` em modo proxy + cluster (com Dashboard de Observabilidade)
 - `web-1`: Ubuntu + `nginx` (backend de teste)
 - `zipkin-1`: Ubuntu + `Elasticsearch 8.x` + `Zipkin Server` (tracing com storage persistente)
 
@@ -132,7 +132,7 @@ curl http://localhost:19200/api/dashboard/traces
 
 ## Admin API e CLI
 
-A Admin API está habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` v3.1.2 instala o utilitário `ishin-cli` em `/usr/bin/`.
+A Admin API está habilitada em ambos os nós com apiKey `nishisan`. O pacote `.deb` (latest) instala o utilitário `ishin-cli` em `/usr/bin/`.
 
 ### Usar o CLI para gerenciar rules
 
